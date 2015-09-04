@@ -1,0 +1,17 @@
+[Unit]
+Description=My Apache Frontend
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+
+[Service]
+TimeoutStartSec=0
+KillMode=none
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker kill seedbox1
+ExecStartPre=-/usr/bin/docker rm seedbox1
+ExecStart=/usr/bin/docker run --rm -h seedbox1 --name seedbox1 -p 80:80 -v /home/core/torrent/downloads:/home/torrent/downloads -v /home/core/torrent/watch:/home/torrent/watch -v /home/core/torrent/.session:/home/torrent/.session -t torrent
+ExecStop=/usr/bin/docker stop seedbox1
+
+[X-Fleet]
+#Conflicts=apache@*.service
