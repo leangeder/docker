@@ -1,0 +1,9 @@
+[Unit]
+Description=rsync torrent data to nas
+Wants=rsync.timer
+
+[Service]
+ExecStart=/usr/bin/rsync -e ssh -arhv --compress-level=9 -P -i /home/core/.ssh/id_rsa /home/core/torrent/downloads/* admin@nas.leangeder.tk:/share/Multimedia/.
+
+[Install]
+WantedBy=rsync.target

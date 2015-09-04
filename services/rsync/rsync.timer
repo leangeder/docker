@@ -1,0 +1,10 @@
+[Unit]
+Description=rsync des data dans le nas
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=2h
+Unit=rsync.target
+
+[Install]
+WantedBy=basic.target
