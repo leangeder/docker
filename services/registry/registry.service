@@ -1,0 +1,20 @@
+[Unit]
+Description=Private Registry
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+
+[Service]
+TimeoutStartSec=0
+KillMode=none
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/mkdir -p /home/core/certs /home/core/auth /home/core/docker_images
+ExecStartPre=-/usr/bin/docker kill registry
+ExecStartPre=-/usr/bin/docker rm registry
+ExecStartPre=-/usr/bin/docker pull registry:2 
+ExecStart=/usr/bin/docker run -d -p 5000:5000 --restart=always --name registry -v $(pwd)/docker_images:/var/lib/registry -v $(pwd)/auth:/auth -v $(pwd)/certs:/certs -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt -e REGISTRY_HTTP_TLS_KEY=/certs/domain.key -e REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry -e REGISTRY_AUTH=htpasswd -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -e REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm" registry:2
+ExecStartPost=-/usr/bin/docker docker exec seedbox1 sh -c "/etc/init.d/torr* stop && /etc/init.d/torr* start"
+ExecStop=/usr/bin/docker stop seedbox1
+
+[X-Fleet]
+#Conflicts=apache@*.service

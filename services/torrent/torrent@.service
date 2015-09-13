@@ -1,0 +1,21 @@
+[Unit]
+Description=Seedbox
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker kill seedbox%i
+ExecStartPre=-/usr/bin/docker rm seedbox%i
+ExecStart=/usr/bin/docker run --rm --name seedbox%i -v /home/core/torrent/downloads:/home/torrent/downloads -v /home/core/torrent/watch:/home/torrent/watch -v /home/core/torrent/.session:/home/torrent/.session -t master.leangeder.tk:5000/torrent
+ExecStartPost=-/usr/bin/docker exec seedbox%i sh -c "/etc/init.d/torr* stop && /etc/init.d/torr* start"
+ExecStartPost=-/usr/bin/etcdctl set /services/haproxy/backend/seedbox/hostname torrent.leangeder.tk
+ExecStartPost=/bin/bash -c "IP=$(docker inspect -f \'{{.NetworkSettings.IPAddress}}\' seedbox1service) && [ -n \"$IP\" ]; sleep 1; etcdctl set /services/haproxy/backend/seedbox/endpoints/seedbox1service \"$IP:80\";"
+ExecStop=/usr/bin/docker stop seedbox%i
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+Conflicts=torrent@*.service
