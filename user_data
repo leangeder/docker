@@ -76,7 +76,7 @@ mlNgaVKh9TIjK0ilKB/y+A==
 coreos:
     fleet:
         public-ip: "$public_ipv4"
-        metadata="name=master,provider=online,region=guadeloupe"
+        metadata: "name=master,provider=online,region=guadeloupe"
     update:
         group: stable
         reboot-strategy: reboot
