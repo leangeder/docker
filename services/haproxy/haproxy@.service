@@ -6,10 +6,11 @@ EnvironmentFile=/etc/environment
 ExecStartPre=-/usr/bin/docker kill %n
 ExecStartPre=-/usr/bin/docker rm %n
 ExecStart=/usr/bin/docker run --name haproxy%i -p 443:443 -p 80:80 -p 1936:1936 -v /home/core/certs:/etc/ssl:ro mkaag/haproxy-confd
-#ExecStartPost=-/usr/bin/etcdctl set /services/haproxy/frontend/https/cert /etc/ssl/domain.pem
+#ExecStart=/usr/bin/docker run --name haproxy%i -p 80:80 -p 1936:1936 mkaag/haproxy-confd
+ExecStartPost=-/usr/bin/etcdctl set /services/haproxy/frontend/https/cert /etc/ssl/domain.crt
 ExecStartPost=-/usr/bin/etcdctl set /services/haproxy/stats/white_list 0.0.0.0/24
-ExecStop=/usr/bin/docker stop -t 3 haproxy%i 
-ExecStopPost=/usr/bin/etcdctl rm --recursive /services/haproxy
+ExecStop=/usr/bin/docker rm -f haproxy%i 
+ExecStopPost=-/usr/bin/etcdctl rm --recursive /services/haproxy
 
 #[X-Fleet]
 #X-ConditionMachineOf=apache-dyn-amb.service

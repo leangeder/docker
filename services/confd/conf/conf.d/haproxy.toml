@@ -1,7 +1,9 @@
 [template]
-src = "haproxy.cfg.tmpl"
-dest = "/etc/haproxy/haproxy.cfg"
-keys = [
-        "/app/your_awesome_app"
-]
-reload_cmd = "echo restarting && /usr/bin/systemctl reload haproxy"
+src           = "haproxy.cfg.tmpl"
+dest          = "/usr/local/etc/haproxy/haproxy.cfg"
+prefix        = "/services/haproxy"
+keys          = [ "/frontend", "/backend", "/stats" ]
+owner         = "root"
+mode          = "0644"
+check_cmd     = "/usr/sbin/haproxy -c -f {{ .src }}"
+reload_cmd    = "echo restarting && /usr/bin/systemctl reload haproxy"
