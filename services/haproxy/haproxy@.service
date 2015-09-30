@@ -12,5 +12,5 @@ ExecStartPost=-/usr/bin/etcdctl set /services/haproxy/stats/white_list 0.0.0.0/2
 ExecStop=/usr/bin/docker rm -f haproxy%i 
 ExecStopPost=-/usr/bin/etcdctl rm --recursive /services/haproxy
 
-#[X-Fleet]
-#X-ConditionMachineOf=apache-dyn-amb.service
+[X-Fleet]
+Conflicts=haproxy@*.service
