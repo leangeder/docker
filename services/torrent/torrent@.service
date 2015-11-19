@@ -10,7 +10,7 @@ ExecStartPre=-/usr/bin/docker kill seedbox%i
 ExecStartPre=-/usr/bin/docker rm seedbox%i
 ExecStartPre=-/usr/bin/docker pull master.leangeder.tk:5000/torrent
 ExecStart=/usr/bin/docker run --rm --name seedbox%i -v /home/core/torrent/downloads:/home/torrent/downloads -v /home/core/torrent/watch:/home/torrent/watch -v /home/core/torrent/.session:/home/torrent/.session -t master.leangeder.tk:5000/torrent
-ExecStartPost=-/usr/bin/docker exec seedbox%i sh -c "chown -R torrent: /home/torrent"
+ExecStartPost=-/usr/bin/docker exec seedbox%i sh -c "chown -R torrent: /home/torrent && rm -rf /home/torrent/.session/rtorrent.lock"
 ExecStartPost=-/usr/bin/docker exec seedbox%i sh -c "/etc/init.d/torr* stop && /etc/init.d/torr* start"
 ExecStartPost=-/usr/bin/etcdctl set /services/haproxy/backend/seedbox/hostname torrent.leangeder.tk
 ExecStartPost=-/bin/bash -c "IP=$(docker inspect -f \'{{.NetworkSettings.IPAddress}}\' seedbox%i ) && [ -n \"$IP\" ]; sleep 1; etcdctl set /services/haproxy/backend/seedbox/endpoints/seedbox%i \"$IP:80\";"

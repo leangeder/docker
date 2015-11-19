@@ -1,0 +1,18 @@
+[Unit]
+Description=Datastore
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+
+[Service]
+ExecStartPre=-/usr/bin/docker kill %i
+ExecStartPre=-/usr/bin/docker rm %i
+ExecStartPre=-/usr/bin/docker pull master.leangeder.tk:5000/datastore
+ExecStart=/usr/bin/docker run --privileged --name %i --cap-add=ALL -itd -v /dev:/dev -v /lib/modules:/lib/modules -v /home/core/data:/data -v /data debian
+ExecStop=/usr/bin/docker rm -f %i
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+Conflicts=datastore@*.service

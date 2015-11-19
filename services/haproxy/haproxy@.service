@@ -13,4 +13,5 @@ ExecStop=/usr/bin/docker rm -f haproxy%i
 ExecStopPost=-/usr/bin/etcdctl rm --recursive /services/haproxy
 
 [X-Fleet]
+MachineMetadata=name=master,provider=online,region=guadeloupe
 Conflicts=haproxy@*.service
