@@ -1,21 +1,26 @@
 global
-    log 127.0.0.1 local0 info
-    log 127.0.0.1 local0 notice
+    log 127.0.0.1 local0
+    log 127.0.0.1 local1 notice
     log-tag haproxy
-    maxconn 20000
+    maxconn 4096
     chroot /var/lib/haproxy
     user haproxy
     group haproxy
-    stats socket /var/run/haproxy.stat level admin
-    {{ if exists "/frontend/https/cert" }}
+    stats socket /var/run/haproxy.sock mode 600 level admin
+    <!-- {{ if exists "/frontend/https/cert" }}
     tune.ssl.default-dh-param 1024
     ssl-default-bind-ciphers kEECDH+aRSA+AES:kRSA+AES:+AES256:RC4-SHA:!kEDH:!LOW:!EXP:!MD5:!aNULL:!eNULL
     ssl-default-bind-options no-sslv3
-    {{ end }}
+    {{ end }} -->
 
 defaults
-    mode http
     log global
+    mode http
+    retries    3
+    maxconn    2000
+    contimeout    5000
+    clitimeout    50000
+    srvtimeout    50000
 
     # Setting options
     option httplog
@@ -40,97 +45,21 @@ defaults
     timeout queue             1m
     backlog                10000
 
-listen stats :1936
-    mode http
-    option dontlog-normal
+listen stats
+    bind *:8888
     stats enable
-    stats scope www_http
-    {{ if exists "/frontend/https/cert" }}
-    stats scope www_https
-    {{ end }}
-    {{ range $backend := lsdir "/backend" }}
-    stats scope {{ base $backend }}_cluster
-    {{ end }}
-
-    stats show-node
-    stats show-legends
-    stats refresh 20s
     stats uri /
 
-    acl white_list src 127.0.0.1 {{ getv "/stats/white_list" }}
-    tcp-request inspect-delay 2s
-    tcp-request content accept if white_list
-    tcp-request content reject
-
-frontend www_http
+frontend http-in
     bind *:80
-    reqadd X-Forwarded-Proto:\ http
-    {{ if exists "/frontend/https/cert" }}
-    redirect scheme https code 301 if !{ ssl_fc }
-    {{ else }}
-    option httplog
+    default_backend application-backend
+
+backend application-backend
+    balance leastconn
+    option httpclose
     option forwardfor
-    option http-server-close
-    {{ range $backend := lsdir "/backend" }}
-    {{ $endpoint := printf "/backend/%s/endpoints" $backend }}
-    {{ if gt ( len ( ls $endpoint ) ) 0 }}
-    {{ $hostname := printf "/backend/%s/hostname" $backend }}
-    acl host_{{ base $backend }} hdr(host) -i {{ getv $hostname }}
-    use_backend {{ base $backend }}_cluster if host_{{ base $backend }}
-    {{ end }}
-    {{ end }}
-    capture cookie  SERVERID                     len 32
-    capture request header Referer               len 64
-    capture request header User-Agent            len 128
-    capture request header Host                  len 64
-    capture request header X-Forwarded-For       len 64
-    capture request header Accept-Encoding       len 64
-    {{ end }}
+    cookie JSESSIONID prefix
 
-{{ if exists "/frontend/https/cert" }}
-frontend www_https
-    bind *:443 ssl crt {{ getv "/frontend/https/cert" }}
-    option httplog
-    option forwardfor
-    option http-server-close
-    tcp-request inspect-delay 5s
-    tcp-request content accept if { req_ssl_hello_type 1 }
-    reqadd X-Forwarded-Proto:\ https
-    {{ range $backend := lsdir "/backend" }}
-    {{ $endpoint := printf "/backend/%s/endpoints" $backend }}
-    {{ if gt ( len ( ls $endpoint ) ) 0 }}
-    {{ $hostname := printf "/backend/%s/hostname" $backend }}
-    acl host_{{ base $backend }} hdr(host) -i {{ getv $hostname }}
-    use_backend {{ base $backend }}_cluster if host_{{ base $backend }}
-    {{ end }}
-    {{ end }}
-    capture cookie  SERVERID                     len 32
-    capture request header Referer               len 64
-    capture request header User-Agent            len 128
-    capture request header Host                  len 64
-    capture request header X-Forwarded-For       len 64
-    capture request header Accept-Encoding       len 64
-{{ end }}
-
-{{ range $backend := lsdir "/backend" }}
-{{ $endpoint := printf "/backend/%s/endpoints" $backend }}
-{{ if gt ( len ( ls $endpoint ) ) 0 }}
-backend {{ base $backend }}_cluster
-    {{ if gt ( len ( ls $endpoint ) ) 1 }}
-    balance roundrobin
-    cookie SERVERID insert indirect
-    {{ $endpoints := printf "/backend/%s/endpoints/*" $backend }}{{ range gets $endpoints }}
-    {{ $id := printf .Key }}{{ with dir $id }}
-    server {{ base $backend }}-{{ base $id  }} {{ getv $id }} cookie {{ base $backend }}-{{ base $id }} check
-    {{ end }}
-    {{ end }}
-    {{ else }}
-    {{ $endpoints := printf "/backend/%s/endpoints/*" $backend }}{{ range gets $endpoints }}
-    {{ $id := printf .Key }}{{ with dir $id }}
-    server {{ base $backend }} {{ getv $id }}
-    {{ end }}
-    {{ end }}
-    {{ end }}
-{{ end }}
-{{ end }}
-
+    {{range getvs "/app/your_awesome_app*"}}
+    server {{.}} cookie A check
+    {{end}}

@@ -2,7 +2,7 @@ confdir = "/etc/confd"
 interval = 20
 backend = "etcd"
 nodes = [
-        "http://master.leangeder.tk:4001"
+        "http://leangeder.eu:4001"
 ]
 prefix = "/"
 scheme = "http"

@@ -3,7 +3,7 @@ Description=Confd
 After=haproxy.service
 
 [Service]
-ExecStart=/usr/bin/confd
+ExecStart=bin/confd
 Restart=always
 
 [Install]
