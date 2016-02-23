@@ -1,0 +1,22 @@
+[Unit]
+Description=Seedbox
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+Requires=vulcand.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker rm -f mailrainloop
+ExecStartPre=-/usr/bin/docker pull leangeder-docker-registry.bintray.io/mailrainloop 
+ExecStart=/usr/bin/docker run --rm --name mailrainloop -t leangeder-docker-registry.bintray.io/mailrainloop 
+ExecStartPost=-/bin/bash -c "IP=$(docker inspect -f \'{{.NetworkSettings.IPAddress}}\' mailrainloop ) && [ -n \"$IP\" ]; sleep 1; /bin/etcdctl set \"/vulcand/upstreams/mailrainloop/endpoints/mailrainloop\" http://$IP:80; /bin/etcdctl set \"/vulcand/hosts/mail.leangeder.eu/locations/home/path\" '/.*'; /bin/etcdctl set /vulcand/hosts/mail.leangeder.eu/locations/home/upstream mailrainloop"
+ExecStop=/usr/bin/docker kill mailrainloop
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/hosts/mail.leangeder.eu
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/upstreams/root/endpoints/mailrainloop
+
+#[Install]
+#WantedBy=multi-user.target
+
+#[X-Fleet]
+#Conflicts=torrent@*.service

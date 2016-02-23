@@ -3,22 +3,25 @@ Description=Seedbox
 After=docker.service
 Requires=docker.service
 Requires=etcd.service
+Requires=vulcand.service
 
 [Service]
 EnvironmentFile=/etc/environment
-ExecStartPre=-/usr/bin/docker kill seedbox
-ExecStartPre=-/usr/bin/docker rm seedbox
+ExecStartPre=-/usr/bin/docker kill %p
+ExecStartPre=-/usr/bin/docker rm %p
 ExecStartPre=-/usr/bin/docker pull leangeder-docker-registry.bintray.io/torrent 
-ExecStart=/usr/bin/docker run --rm --name seedbox -v /home/core/torrent/downloads:/home/torrent/downloads -v /home/core/torrent/watch:/home/torrent/watch -v /home/core/torrent/.session:/home/torrent/.session -t leangeder-docker-registry.bintray.io/torrent 
-ExecStartPost=-/usr/bin/docker exec seedbox sh -c "chown -R torrent: /home/torrent && rm -rf /home/torrent/.session/rtorrent.lock"
-ExecStartPost=-/usr/bin/docker exec seedbox sh -c "/etc/init.d/torr* stop && /etc/init.d/torr* start"
-ExecStartPost=-/bin/bash -c "IP=$(docker inspect -f \'{{.NetworkSettings.IPAddress}}\' seedbox ) && [ -n \"$IP\" ]; sleep 1; /bin/etcdctl set \"/vulcand/upstreams/torrent/endpoints/seedbox\" http://$IP:80; \
-/bin/etcdctl set \"/vulcand/hosts/torrent.leangeder.eu/locations/home/path\" '/.*'; \
-/bin/etcdctl set /vulcand/hosts/torrent.leangeder.eu/locations/home/upstream torrent"
-ExecStop=/usr/bin/docke kill seedbox
-ExecStopPost=/usr/bin/etcdctl rm /vulcand/hosts/torrent.leangeder.eu/locations/home/path
-ExecStopPost=/usr/bin/etcdctl rm /vulcand/hosts/torrent.leangeder.eu/locations/home/upstream
-ExecStopPost=/usr/bin/etcdctl rm /vulcand/upstreams/torrent/endpoints/seedbox
+ExecStart=/usr/bin/docker run --rm --name %p -v /home/core/torrent/downloads:/home/torrent/downloads -v /home/core/torrent/watch:/home/torrent/watch -v /home/core/torrent/.session:/home/torrent/.session -t leangeder-docker-registry.bintray.io/torrent
+ExecStartPost=/usr/bin/sleep 1
+#ExecStartPost=/bin/bash -c "export IP=$(/usr/bin/docker inspect -f {{(index .NetworkSettings.IPAddress)}} %p)"
+#ExecStartPost=/usr/bin/etcdctl set /vulcand/upstreams/torrent/endpoints/seedbox http://${IP}:80
+#ExecStartPost=-/bin/bash -c "/usr/bin/etcdctl set /vulcand/upstreams/torrent/endpoints/seedbox http://$(/usr/bin/docker inspect -f '{{.NetworkSettings.IPAddress}}' %p):80"
+ExecStartPost=/bin/sh -c "/usr/bin/etcdctl set /vulcand/upstreams/torrent/endpoints/seedbox http://$(docker inspect --format='{{(index .NetworkSettings.IPAddress)}}' %p):80"
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/torrent.leangeder.eu/locations/home/path /.*
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/torrent.leangeder.eu/locations/home/upstream torrent
+#ExecStartPost=/usr/bin/docker exec %p /bin/sh -c "chown -R torrent:torrent /home/torrent; rm -rf /home/torrent/.session/rtorrent.lock && /etc/init.d/*torr* restart"
+ExecStop=/usr/bin/docker rm -f %p 
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/hosts/torrent.leangeder.eu
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/upstreams/torrent
 
 #[Install]
 #WantedBy=multi-user.target

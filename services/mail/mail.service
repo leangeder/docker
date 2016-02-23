@@ -1,0 +1,19 @@
+[Unit]
+Description=Seedbox
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker kill webmail
+ExecStartPre=-/usr/bin/docker rm webmail
+ExecStartPre=-/usr/bin/docker pull leangeder-docker-registry.bintray.io/torrent 
+ExecStart=/usr/bin/docker run --rm --name webmail -t leangeder-docker-registry.bintray.io/torrent 
+ExecStartPost=-/bin/bash -c "IP=$(docker inspect -f \'{{.NetworkSettings.IPAddress}}\' webmail ) && [ -n \"$IP\" ]; sleep 1; /bin/etcdctl set \"/vulcand/upstreams/webmail/endpoints/webmail\" http://$IP:33411; \
+/bin/etcdctl set \"/vulcand/hosts/mail.leangeder.eu/locations/home/path\" '/.*'; \
+/bin/etcdctl set /vulcand/hosts/mail.leangeder.eu/locations/home/upstream webmail"
+ExecStop=/usr/bin/docker kill seedbox
+ExecStopPost=/usr/bin/etcdctl rm /vulcand/hosts/mail.leangeder.eu/locations/home/path
+ExecStopPost=/usr/bin/etcdctl rm /vulcand/hosts/mail.leangeder.eu/locations/home/upstream
+ExecStopPost=/usr/bin/etcdctl rm /vulcand/upstreams/torrent/endpoints/webmail

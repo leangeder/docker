@@ -3,16 +3,15 @@ Description=Vulcan
 After=docker.service
 
 [Service]
+#Type=oneshot
 TimeoutStartSec=0
 EnvironmentFile=/etc/environment
 ExecStartPre=-/usr/bin/docker kill vulcan1
-ExecStartPre=-/usr/bin/docker rm vulcan1
+ExecStartPre=-/usr/bin/docker rm -f vulcan1
 ExecStartPre=/usr/bin/docker pull mailgun/vulcand
-ExecStart=/usr/bin/docker run --rm --name vulcan1 -p 80:80 -p 8182:8182 mailgun/vulcand /go/bin/vulcand -apiInterface=0.0.0.0 -interface=0.0.0.0 -etcd=http://172.17.42.1:4001 -port=80 -apiPort=8182
-#ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/leangeder.tk/locations/root/path '/'
-#ExecStartPost=/usr/bin/etcdctl set /vulcand/upstreams/root/endpoints/vulcand.service http://${COREOS_PUBLIC_IPV4}
-#ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/leangeder.tk/locations/root/upstream "root"
+ExecStart=/usr/bin/docker run --rm --name vulcan1 -p 80:80 -p 8182:8182 mailgun/vulcand /go/bin/vulcand -apiInterface=0.0.0.0 -interface=0.0.0.0 -etcd=http://172.17.0.1:4001 -port=80 -apiPort=8182
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/leangeder.eu/locations/root/path '/.*'
+ExecStartPost=/usr/bin/etcdctl set /vulcand/upstreams/root/endpoints/vulcand.service http://${COREOS_PUBLIC_IPV4}
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/leangeder.eu/locations/root/upstream "root"
 ExecStop=/usr/bin/docke kill vultan1
-#ExecStopPost=/usr/bin/etcdctl rm /vulcand/hosts/leangeder.tk/locations/root/path
-#ExecStopPost=/usr/bin/etcdctl rm /vulcand/hosts/leangeder.tk/locations/root/upstream
-#ExecStopPost=/usr/bin/etcdctl rm /vulcand/upstreams/root/endpoints/vulcand.service
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand
