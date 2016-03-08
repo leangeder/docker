@@ -15,6 +15,8 @@ write_files:
         owner: root
         content: "COREOS_PUBLIC_IPV4=62.210.14.17\nCOREOS_PRIVATE_IPV4=195.154.103.115\n"
 coreos:
+  update:
+    reboot-strategy: off
   etcd2:
     # generate a new token for each unique cluster from https://discovery.etcd.io/new:
 #    discovery: https://discovery.etcd.io/85057a25420b01e0f893b1f56dd5eb5f

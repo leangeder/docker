@@ -1,0 +1,27 @@
+[Unit]
+Description=Zeronet
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+Requires=vulcand.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker kill %p
+ExecStartPre=-/usr/bin/docker rm %p
+ExecStartPre=-/usr/biin/docker pull nofish/zeronet 
+#ExecStart=/usr/bin/docker run --rm --name %p -v /home/core/mail:/var/www/rainloop/data -t leangeder-docker-registry.bintray.io/mailrainloop
+ExecStart=/usr/bin/docker run --rm --name %p -p 15441:15441 nofish/zeronet
+ExecStartPost=/usr/bin/sleep 1
+ExecStartPost=/bin/sh -c "/usr/bin/etcdctl set /vulcand/upstreams/zero/endpoints/zero http://$(docker inspect --format='{{(index .NetworkSettings.IPAddress)}}' %p):43110"
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/zero.leangeder.eu/locations/home/path /.*
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/zero.leangeder.eu/locations/home/upstream zero
+ExecStop=/usr/bin/docker rm -f %p
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/hosts/zero.leangeder.eu
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/upstreams/zero
+
+#[Install]
+#WantedBy=multi-user.target
+
+#[X-Fleet]
+#Conflicts=torrent@*.service

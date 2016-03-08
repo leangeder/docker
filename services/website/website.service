@@ -1,0 +1,26 @@
+[Unit]
+Description=Website
+After=docker.service
+Requires=docker.service
+Requires=etcd.service
+Requires=vulcand.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker kill %p
+ExecStartPre=-/usr/bin/docker rm %p
+ExecStartPre=-/usr/bin/docker pull leangeder-docker-registry.bintray.io/website
+ExecStart=/usr/bin/docker run --rm --name %p -t leangeder-docker-registry.bintray.io/website
+ExecStartPost=/usr/bin/sleep 1
+ExecStartPost=/bin/sh -c "/usr/bin/etcdctl set /vulcand/upstreams/website/endpoints/website http://$(docker inspect --format='{{(index .NetworkSettings.IPAddress)}}' %p):80"
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/test.leangeder.eu/locations/home/path /.*
+ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/test.leangeder.eu/locations/home/upstream website
+ExecStop=/usr/bin/docker rm -f %p
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/hosts/test.leangeder.eu
+ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/upstreams/website
+
+#[Install]
+#WantedBy=multi-user.target
+
+#[X-Fleet]
+#Conflicts=torrent@*.service
