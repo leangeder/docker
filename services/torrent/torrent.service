@@ -18,7 +18,7 @@ ExecStartPost=/usr/bin/sleep 1
 ExecStartPost=/bin/sh -c "/usr/bin/etcdctl set /vulcand/upstreams/torrent/endpoints/seedbox http://$(docker inspect --format='{{(index .NetworkSettings.IPAddress)}}' %p):80"
 ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/torrent.leangeder.eu/locations/home/path /.*
 ExecStartPost=/usr/bin/etcdctl set /vulcand/hosts/torrent.leangeder.eu/locations/home/upstream torrent
-#ExecStartPost=/usr/bin/docker exec %p /bin/sh -c "chown -R torrent:torrent /home/torrent; rm -rf /home/torrent/.session/rtorrent.lock && /etc/init.d/*torr* restart"
+ExecStartPost=/usr/bin/docker exec %p /bin/sh -c "chown -R torrent:torrent /home/torrent; rm -rf /home/torrent/.session/rtorrent.lock && /etc/init.d/*torr* restart"
 ExecStop=/usr/bin/docker rm -f %p 
 ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/hosts/torrent.leangeder.eu
 ExecStopPost=/usr/bin/etcdctl rm --recursive --dir /vulcand/upstreams/torrent
